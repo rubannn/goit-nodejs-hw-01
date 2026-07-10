@@ -4,7 +4,6 @@ DIR = E:\Downloads
 SOURCE = E:\Downloads
 TARGET = E:\Temp\sorted
 DAYS = 90
-CONFIRM =
 
 help:
 	@type help.txt
@@ -25,6 +24,11 @@ organize:
 o: organize
 
 cleanup:
-	@$(NODE) $(APP) cleanup "$(DIR)" --older-than $(DAYS) $(CONFIRM)
+	@$(NODE) $(APP) cleanup "$(DIR)" --older-than $(DAYS)
 
 c: cleanup
+
+cleanup-confirm:
+	@$(NODE) $(APP) cleanup "$(DIR)" --older-than $(DAYS) --confirm
+
+cc: cleanup-confirm

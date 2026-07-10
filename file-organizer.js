@@ -338,17 +338,58 @@ program
   .description('Find old files and optionally delete them')
   .action(async (directory, options) => {
     const cleanup = new Cleanup();
+    const foundFiles = [];
+    let deletedFiles = 0;
 
     cleanup.on('cleanup-start', ({ directoryPath, olderThanDays, confirm }) => {
-      console.log(
-        `Cleanup started in ${directoryPath}. Threshold: ${olderThanDays} days. Confirm: ${confirm}`
-      );
+      console.log(`\n\n🧹 Cleanup: ${directoryPath}`);
+      console.log(`Older than: ${olderThanDays} day(s)`);
+      console.log(`Mode: ${confirm ? 'delete' : 'dry run'}`);
+    });
+
+    cleanup.on('file-found', (file) => {
+      foundFiles.push(file);
+    });
+
+    cleanup.on('file-deleted', () => {
+      deletedFiles += 1;
     });
 
     cleanup.on('cleanup-complete', (result) => {
-      console.log(`Cleanup finished for: ${result.directory}`);
-      console.log(`Status: ${result.status}`);
-      console.log(result.message);
+      const { report } = result;
+      const maxNameWidth = Math.max(...report.files.map((file) => file.name.length), 10);
+
+      console.log('');
+      console.log('');
+      renderSection(report.confirm ? 'Cleanup Results:' : 'Cleanup Preview:');
+
+      if (report.files.length === 0) {
+        console.log('');
+        console.log('No files matched the selected age threshold.');
+        return;
+      }
+
+      console.log('');
+      report.files.forEach((file) => {
+        console.log(
+          `\t${file.name.padEnd(maxNameWidth)}  ${Math.floor(file.daysOld)} days  ${formatBytes(file.size)}`
+        );
+        console.log(`\t${toDisplayPath(file.path, report.directory)}`);
+        console.log('');
+      });
+
+      renderSection('Summary:');
+      console.log(`\tScanned files: ${report.scannedFiles}`);
+      console.log(`\tMatched files: ${report.matchedFiles}`);
+      console.log(`\tMatched size: ${formatBytes(report.matchedSize)}`);
+
+      if (report.confirm) {
+        console.log(`\tDeleted files: ${report.deletedFiles}`);
+        console.log(`\tDeleted size: ${formatBytes(report.deletedSize)}`);
+      } else {
+        console.log('\tDry run mode: no files were deleted.');
+        console.log('\tRun again with --confirm to delete these files.');
+      }
     });
 
     await cleanup.run(directory, {

@@ -21,5 +21,9 @@
   ----------------------------------------------------------
     make cleanup DIR=/path/to/directory DAYS=90
     make c       DIR=/path/to/directory DAYS=90
-    make c       DIR=/path/to/directory DAYS=90 CONFIRM=--confirm
+    make cleanup-confirm DIR=/path/to/directory DAYS=90 --confirm
+    make cc              DIR=/path/to/directory DAYS=90 --confirm
+
+  Defaults:
+    DIR=/path/to/directory   SOURCE=/source/directory   TARGET=/target/directory   DAYS=90
 ================================================================
