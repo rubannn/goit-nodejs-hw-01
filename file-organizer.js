@@ -253,22 +253,81 @@ program
 program
   .command('organize')
   .argument('<source>', 'Source directory')
-  .argument('<target>', 'Target directory')
+  .argument('[target]', 'Target directory')
+  .option('--output <target>', 'Target directory')
   .description('Copy files into category folders')
-  .action(async (source, target) => {
+  .action(async (source, target, options) => {
     const organizer = new Organizer();
+    let lastProgressLine = '';
+    const finalTarget = options.output ?? target;
+
+    if (!finalTarget) {
+      console.error('Organize failed: target directory is required. Use <target> or --output <target>.');
+      process.exitCode = 1;
+      return;
+    }
 
     organizer.on('organize-start', ({ sourceDirectory, targetDirectory }) => {
-      console.log(`Organizing files from ${sourceDirectory} to ${targetDirectory}`);
+      console.log(`\n\n📦 Organizing: ${sourceDirectory}`);
+      console.log(`Target: ${targetDirectory}`);
+      console.log('');
+      renderSection('Creating folders...')
+    });
+
+    organizer.on('folder-created', ({ category }) => {
+      console.log(`\t✓ ${category}/`);
+    });
+
+    organizer.on('copy-complete', ({ progress }) => {
+      const progressLine = `Copying files... ${drawProgressBar(progress.current, progress.total)} files`;
+
+      if (progressLine !== lastProgressLine) {
+        process.stdout.write(`\r${progressLine}`);
+        lastProgressLine = progressLine;
+      }
     });
 
     organizer.on('organize-complete', (result) => {
-      console.log(`Organize finished for: ${result.source}`);
-      console.log(`Status: ${result.status}`);
-      console.log(result.message);
+      const { report } = result;
+      const categoryNameWidth = Math.max(...report.categories.map((item) => item.category.length), 5);
+      const categoryCountWidth = Math.max(
+        ...report.categories.map((item) => String(item.count).length),
+        String(report.totalCopiedFiles).length
+      );
+
+      if (lastProgressLine) {
+        process.stdout.write('\n');
+      } else {
+        console.log(`Copying files... ${drawProgressBar(0, 0)} files`);
+      }
+
+      console.log('✅ Organization complete!');
+      console.log('');
+      renderSection('Summary:')
+
+      report.categories.forEach((item) => {
+        const summaryTargetPath = toDisplayPath(
+          item.targetDirectory,
+          path.dirname(report.targetDirectory)
+        );
+        console.log(
+          `\t${item.category.padEnd(categoryNameWidth)}: ${String(item.count).padStart(categoryCountWidth)} files → ${summaryTargetPath}/`
+        );
+      });
+
+      console.log('');
+      renderSection(`Total copied: ${report.totalCopiedFiles} files (${formatBytes(report.totalCopiedSize)})`, 'group')
     });
 
-    await organizer.run(source, target);
+    organizer.on('organize-error', (error) => {
+      if (lastProgressLine) {
+        process.stdout.write('\n');
+      }
+
+      console.error(`Organize failed: ${error.message}`);
+    });
+
+    await organizer.run(source, finalTarget);
   });
 
 program

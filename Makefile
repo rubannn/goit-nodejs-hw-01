@@ -1,8 +1,8 @@
 NODE = node
 APP = file-organizer.js
 DIR = E:\Downloads
-SOURCE = .
-TARGET = .\sorted
+SOURCE = E:\Downloads
+TARGET = E:\Temp\sorted
 DAYS = 90
 CONFIRM =
 
@@ -20,7 +20,7 @@ duplicates:
 d: duplicates
 
 organize:
-	@$(NODE) $(APP) organize "$(SOURCE)" "$(TARGET)"
+	@$(NODE) $(APP) organize "$(SOURCE)" --output "$(TARGET)"
 
 o: organize
 

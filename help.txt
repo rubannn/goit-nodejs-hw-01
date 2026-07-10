@@ -14,16 +14,12 @@
 
   ORGANIZE - sort files into target folder
   ----------------------------------------------------------
-    make organize SOURCE=/source/dir TARGET=/target/dir
-    make o        SOURCE=/source/dir TARGET=/target/dir
+    make organize SOURCE=/source/directory TARGET=/target/directory
+    make o        SOURCE=/source/directory TARGET=/target/directory
 
   CLEANUP - remove files older than N days
   ----------------------------------------------------------
     make cleanup DIR=/path/to/directory DAYS=90
     make c       DIR=/path/to/directory DAYS=90
     make c       DIR=/path/to/directory DAYS=90 CONFIRM=--confirm
-
-  Defaults:
-    DIR=E:\Downloads   SOURCE=.   TARGET=.\sorted   DAYS=90
-
 ================================================================
