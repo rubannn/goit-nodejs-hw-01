@@ -51,7 +51,7 @@ function printSectionTitle(title) {
   console.log('═'.repeat(Math.max(title.length, 10)));
 }
 
-function printDivider(title, length = 30) {
+function printGroupTitle(title, length = 30) {
   console.log('═'.repeat(length));
   console.log(title);
 }
@@ -141,6 +141,7 @@ program
       console.log(`\tOlder than 90:  ${report.ageGroups.olderThan90Days} files`);
       console.log('');
       printSectionTitle('Largest files:');
+
       if (report.largestFiles.length === 0) {
         console.log('  No files found.');
       } else {
@@ -217,17 +218,19 @@ program
 
       report.duplicateGroups.forEach((group, index) => {
         console.log('');
-        printDivider(`Group ${index + 1} (${group.files.length} copies, ${formatBytes(group.fileSize)} each):`);
-        console.log(`  SHA-256: ${shortenHash(group.hash)}`);
+        printGroupTitle(`Group ${index + 1} (${group.files.length} copies, ${formatBytes(group.fileSize)} each):`);
+        console.log(`\tSHA-256: ${shortenHash(group.hash)}`);
         console.log('');
 
-        group.files.forEach((file, fileIndex) => {
-          console.log(`  📄 ${toDisplayPath(file.path, report.directory)}`);
+        group.files.forEach((file) => {
+          console.log(`\t📄 ${toDisplayPath(file.path, report.directory)}`);
         });
 
-        console.log('');
-        console.log(`  Wasted space: ${formatBytes(group.wastedSpace)}`);
+        console.log(`\n\tWasted space: ${formatBytes(group.wastedSpace)}`);
       });
+
+      console.log('');
+      printGroupTitle(`💾 Total wasted space: ${formatBytes(report.totalWastedSpace)}`)
     });
 
     duplicateFinder.on('search-error', (error) => {
