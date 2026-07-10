@@ -353,9 +353,6 @@ program
       const previewFiles = report.files.slice(0, 3);
       const remainingFiles = Math.max(report.files.length - previewFiles.length, 0);
 
-      console.log('');
-      console.log('');
-
       if (report.files.length === 0) {
         console.log('No files matched the selected age threshold.');
         return;
