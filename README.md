@@ -231,3 +231,69 @@ file-organizer/
 }
 ```
 Тепер замість довгої команди `node file-organizer.js scan /path` можна викликати `npm run scan -- /path`. Подвійний дефіс -- передає всі наступні аргументи безпосередньо в скрипт.
+
+
+### Додаткові технічні деталі
+
+#### Парсинг аргументів командного рядка
+
+Для базового парсингу достатньо process.argv, але якщо ви хочете зробити інтерфейс більш професійним, можете використати бібліотеки commander або yargs.
+
+Вони автоматично генерують довідку (--help), валідують аргументи та надають зручний API для роботи з опціями.
+
+Приклад з commander:
+
+```js
+import { Command } from 'commander';
+
+const program = new Command();
+
+program
+  .name('file-organizer')
+  .description('CLI tool to organize files')
+  .version('1.0.0');
+
+program
+  .command('scan <directory>')
+  .description('Scan directory and show statistics')
+  .action((directory) => {
+    // виконати scan
+  });
+
+program.parse();
+```
+
+Однак для цього завдання використання таких бібліотек не є обов'язковим. Базового парсингу через process.argv цілком достатньо для демонстрації ваших навичок.
+
+#### Форматування розмірів файлів
+
+Розміри файлів краще показувати у зручному для людини форматі: замість "1234567890 bytes" виводити "1.2 GB".
+
+Напишіть допоміжну функцію, яка конвертує байти в MB або GB:
+
+```js
+function formatSize(bytes) {
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  } else if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  } else {
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  }
+}
+```
+
+#### Прогрес-бар у консолі
+
+Для показу прогресу обробки файлів можна використати прості ASCII символи. Наприклад, прогрес-бар можна намалювати символами █:
+
+```js
+function drawProgressBar(current, total, width = 20) {
+  const percentage = current / total;
+  const filled = Math.round(percentage * width);
+  const bar = '█'.repeat(filled) + '░'.repeat(width - filled);
+  return `${bar} ${current}/${total}`;
+}
+```
+
+Виклик `drawProgressBar(123, 247)` поверне рядок типу ███████████░░░░░░░░░ 123/247.
