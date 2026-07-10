@@ -1,0 +1,29 @@
+{
+  "name": "file-organizer",
+  "version": "1.0.0",
+  "description": "У кожного з нас директорія Downloads перетворюється на справжній хаос.",
+  "homepage": "https://github.com/rubannn/goit-nodejs-hw-01#readme",
+  "bugs": {
+    "url": "https://github.com/rubannn/goit-nodejs-hw-01/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rubannn/goit-nodejs-hw-01.git"
+  },
+  "license": "ISC",
+  "author": "M.Ruban",
+  "type": "module",
+  "main": "file-organizer.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "scan": "node file-organizer.js scan",
+    "duplicates": "node file-organizer.js duplicates",
+    "organize": "node file-organizer.js organize",
+    "cleanup": "node file-organizer.js cleanup"
+  },
+  "dependencies": {
+    "commander": "^15.0.0"
+  }
+}
