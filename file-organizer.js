@@ -50,10 +50,10 @@ function formatDate(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function renderSection(title, kind = 'section') {
+function renderSection(title, top = false) {
   const divider = '═'.repeat(Math.max(title.length, 10));
 
-  if (kind === 'group') {
+  if (top) {
     console.log(divider);
     console.log(title);
     return;
@@ -227,7 +227,7 @@ program
         console.log('');
         renderSection(
           `Group ${index + 1} (${group.files.length} copies, ${formatBytes(group.fileSize)} each):`,
-          'group'
+          true
         );
         console.log(`\tSHA-256: ${shortenHash(group.hash)}`);
         console.log('');
@@ -240,7 +240,7 @@ program
       });
 
       console.log('');
-      renderSection(`💾 Total wasted space: ${formatBytes(report.totalWastedSpace)}`, 'group');
+      renderSection(`💾 Total wasted space: ${formatBytes(report.totalWastedSpace)}`, true);
     });
 
     duplicateFinder.on('search-error', (error) => {
@@ -320,7 +320,7 @@ program
       });
 
       console.log('');
-      renderSection(`Total copied: ${report.totalCopiedFiles} files (${formatBytes(report.totalCopiedSize)})`, 'group')
+      renderSection(`Total copied: ${report.totalCopiedFiles} files (${formatBytes(report.totalCopiedSize)})`, true)
     });
 
     organizer.on('organize-error', (error) => {
@@ -342,25 +342,28 @@ program
   .description('Find old files and optionally delete them')
   .action(async (directory, options) => {
     const cleanup = new Cleanup();
+    let lastDeleteProgressLine = '';
+    let hadMatches = false;
 
     cleanup.on('cleanup-start', ({ directoryPath, olderThanDays, confirm }) => {
       console.log(`\n\n🧹 Cleanup: ${directoryPath}`);
       console.log(`Looking for files older than ${olderThanDays} days...`);
     });
 
-    cleanup.on('cleanup-complete', (result) => {
-      const { report } = result;
+    cleanup.on('cleanup-ready', (report) => {
       const previewFiles = report.files.slice(0, 3);
       const remainingFiles = Math.max(report.files.length - previewFiles.length, 0);
 
       if (report.files.length === 0) {
+        console.log('');
         console.log('No files matched the selected age threshold.');
         return;
       }
 
+      hadMatches = true;
       console.log('');
-      renderSection(`Found ${report.matchedFiles} files to delete:`)
       console.log('');
+      renderSection(`Found ${report.matchedFiles} files to delete:`);
 
       previewFiles.forEach((file, index) => {
         if (index > 0) {
@@ -378,11 +381,40 @@ program
       }
 
       console.log('');
-      renderSection(`Total: ${report.matchedFiles} files (${formatBytes(report.matchedSize)})`, 'group');
-      console.log('');
 
       if (report.confirm) {
-        console.log(`✅ Cleanup complete: deleted ${report.deletedFiles} files (${formatBytes(report.deletedSize)}).`);
+        console.log(`⚠️  DELETING ${report.matchedFiles} files (${formatBytes(report.matchedSize)}). This action cannot be undone!`);
+        console.log('');
+      } else {
+        renderSection(`Total: ${report.matchedFiles} files (${formatBytes(report.matchedSize)})`, true);
+        console.log('');
+      }
+    });
+
+    cleanup.on('file-deleted', ({ progress }) => {
+      const progressLine = `Deleting... ${drawProgressBar(progress.current, progress.total)}`;
+
+      if (progressLine !== lastDeleteProgressLine) {
+        process.stdout.write(`\r${progressLine}`);
+        lastDeleteProgressLine = progressLine;
+      }
+    });
+
+    cleanup.on('cleanup-complete', (result) => {
+      const { report } = result;
+
+      if (!hadMatches) {
+        return;
+      }
+
+      if (report.confirm) {
+        if (lastDeleteProgressLine) {
+          process.stdout.write('\n');
+        }
+
+        console.log('');
+        console.log('✅ Cleanup complete!');
+        console.log(`Deleted: ${report.deletedFiles} files (${formatBytes(report.deletedSize)} freed)`);
       } else {
         console.log('⚠️  DRY RUN MODE: No files were deleted.');
         console.log('To actually delete these files, run with --confirm flag.');
@@ -390,6 +422,10 @@ program
     });
 
     cleanup.on('cleanup-error', (error) => {
+      if (lastDeleteProgressLine) {
+        process.stdout.write('\n');
+      }
+
       console.error(`Cleanup failed: ${error.message}`);
     });
 
@@ -400,3 +436,5 @@ program
   });
 
 await program.parseAsync(process.argv);
+
+
