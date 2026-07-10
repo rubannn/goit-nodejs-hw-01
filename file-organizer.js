@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import path from 'path';
 import { Scanner } from './lib/scanner.js';
 import { DuplicateFinder } from './lib/duplicates.js';
 import { Organizer } from './lib/organizer.js';
@@ -20,13 +21,6 @@ function formatBytes(bytes) {
   }
 
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-function formatDate(date) {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date);
 }
 
 function drawProgressBar(current, total, width = 20) {
@@ -55,6 +49,24 @@ function formatDaysAgo(date) {
 function printSectionTitle(title) {
   console.log(title);
   console.log('═'.repeat(Math.max(title.length, 10)));
+}
+
+function printDivider(title, length = 30) {
+  console.log('═'.repeat(length));
+  console.log(title);
+}
+
+function shortenHash(hash, length = 12) {
+  if (hash.length <= length) {
+    return hash;
+  }
+
+  return `${hash.slice(0, length)}...`;
+}
+
+function toDisplayPath(filePath, basePath) {
+  const relativePath = path.relative(basePath, filePath) || path.basename(filePath);
+  return relativePath.replaceAll('\\', '/');
 }
 
 program
@@ -106,15 +118,15 @@ program
       console.log('');
       printSectionTitle('📊 Scan Results:');
       console.log('');
-      console.log(`Total files: ${report.totalFiles}`);
-      console.log(`Total size: ${formatBytes(report.totalSize)}`);
+      console.log(`\tTotal files: ${report.totalFiles}`);
+      console.log(`\tTotal size: ${formatBytes(report.totalSize)}`);
       console.log('');
       printSectionTitle('By File Type:');
 
       if (report.fileTypes.length === 0) {
         console.log('  No files found.');
       } else {
-        report.fileTypes.forEach((fileType, index) => {
+        report.fileTypes.forEach((fileType) => {
           const label = formatTypeLabel(fileType.extension);
           console.log(
             `\t${label.padEnd(typeLabelWidth)}  ${String(fileType.count).padStart(typeCountWidth)} files  ${formatBytes(fileType.totalSize)}`
@@ -167,15 +179,63 @@ program
   .description('Find duplicate files by content hash')
   .action(async (directory) => {
     const duplicateFinder = new DuplicateFinder();
+    let lastProgressLine = '';
 
     duplicateFinder.on('search-start', ({ directoryPath }) => {
-      console.log(`Searching duplicates in: ${directoryPath}`);
+      console.log(`\n\n🔍 Searching for duplicates in: ${directoryPath}`);
+    });
+
+    duplicateFinder.on('file-processed', ({ progress }) => {
+      const progressLine = `Calculating hashes... ${drawProgressBar(progress.current, progress.total)} files`;
+
+      if (progressLine !== lastProgressLine) {
+        process.stdout.write(`\r${progressLine}`);
+        lastProgressLine = progressLine;
+      }
     });
 
     duplicateFinder.on('duplicates-found', (result) => {
-      console.log(`Duplicate search finished for: ${result.directory}`);
-      console.log(`Status: ${result.status}`);
-      console.log(result.message);
+      const { report } = result;
+
+      if (lastProgressLine) {
+        process.stdout.write('\n');
+      } else {
+        console.log(`Calculating hashes... ${drawProgressBar(0, 0)} files`);
+      }
+
+      console.log('');
+      console.log('');
+      console.log(
+        `Found ${report.duplicateGroups.length} duplicate group(s) (${formatBytes(report.totalWastedSpace)} wasted):`
+      );
+      console.log('');
+
+      if (report.duplicateGroups.length === 0) {
+        console.log('No duplicate files found.');
+        return;
+      }
+
+      report.duplicateGroups.forEach((group, index) => {
+        console.log('');
+        printDivider(`Group ${index + 1} (${group.files.length} copies, ${formatBytes(group.fileSize)} each):`);
+        console.log(`  SHA-256: ${shortenHash(group.hash)}`);
+        console.log('');
+
+        group.files.forEach((file, fileIndex) => {
+          console.log(`  📄 ${toDisplayPath(file.path, report.directory)}`);
+        });
+
+        console.log('');
+        console.log(`  Wasted space: ${formatBytes(group.wastedSpace)}`);
+      });
+    });
+
+    duplicateFinder.on('search-error', (error) => {
+      if (lastProgressLine) {
+        process.stdout.write('\n');
+      }
+
+      console.error(`Duplicate search failed: ${error.message}`);
     });
 
     await duplicateFinder.run(directory);
