@@ -13,14 +13,14 @@ function formatBytes(bytes) {
   }
 
   if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${Number((bytes / 1024).toFixed(1))} KB`;
   }
 
   if (bytes < 1024 * 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${Number((bytes / (1024 * 1024)).toFixed(1))} MB`;
   }
 
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  return `${Number((bytes / (1024 * 1024 * 1024)).toFixed(2))} GB`;
 }
 
 function drawProgressBar(current, total, width = 20) {
@@ -44,6 +44,10 @@ function formatDaysAgo(date) {
   const days = Math.floor((Date.now() - date.getTime()) / dayInMs);
 
   return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
+function formatDate(date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function renderSection(title, kind = 'section') {
@@ -338,58 +342,58 @@ program
   .description('Find old files and optionally delete them')
   .action(async (directory, options) => {
     const cleanup = new Cleanup();
-    const foundFiles = [];
-    let deletedFiles = 0;
 
     cleanup.on('cleanup-start', ({ directoryPath, olderThanDays, confirm }) => {
       console.log(`\n\n🧹 Cleanup: ${directoryPath}`);
-      console.log(`Older than: ${olderThanDays} day(s)`);
-      console.log(`Mode: ${confirm ? 'delete' : 'dry run'}`);
-    });
-
-    cleanup.on('file-found', (file) => {
-      foundFiles.push(file);
-    });
-
-    cleanup.on('file-deleted', () => {
-      deletedFiles += 1;
+      console.log(`Looking for files older than ${olderThanDays} days...`);
     });
 
     cleanup.on('cleanup-complete', (result) => {
       const { report } = result;
-      const maxNameWidth = Math.max(...report.files.map((file) => file.name.length), 10);
+      const previewFiles = report.files.slice(0, 3);
+      const remainingFiles = Math.max(report.files.length - previewFiles.length, 0);
 
       console.log('');
       console.log('');
-      renderSection(report.confirm ? 'Cleanup Results:' : 'Cleanup Preview:');
 
       if (report.files.length === 0) {
-        console.log('');
         console.log('No files matched the selected age threshold.');
         return;
       }
 
       console.log('');
-      report.files.forEach((file) => {
-        console.log(
-          `\t${file.name.padEnd(maxNameWidth)}  ${Math.floor(file.daysOld)} days  ${formatBytes(file.size)}`
-        );
-        console.log(`\t${toDisplayPath(file.path, report.directory)}`);
-        console.log('');
+      renderSection(`Found ${report.matchedFiles} files to delete:`)
+      console.log('');
+
+      previewFiles.forEach((file, index) => {
+        if (index > 0) {
+          console.log('');
+        }
+
+        console.log(file.name);
+        console.log(`\tSize: ${formatBytes(file.size)}`);
+        console.log(`\tModified: ${Math.floor(file.daysOld)} days ago (${formatDate(file.modifiedAt)})`);
       });
 
-      renderSection('Summary:');
-      console.log(`\tScanned files: ${report.scannedFiles}`);
-      console.log(`\tMatched files: ${report.matchedFiles}`);
-      console.log(`\tMatched size: ${formatBytes(report.matchedSize)}`);
+      if (remainingFiles > 0) {
+        console.log('');
+        console.log(`... (${remainingFiles} more files)`);
+      }
+
+      console.log('');
+      renderSection(`Total: ${report.matchedFiles} files (${formatBytes(report.matchedSize)})`, 'group');
+      console.log('');
 
       if (report.confirm) {
-        console.log(`\tDeleted files: ${report.deletedFiles}`);
-        console.log(`\tDeleted size: ${formatBytes(report.deletedSize)}`);
+        console.log(`✅ Cleanup complete: deleted ${report.deletedFiles} files (${formatBytes(report.deletedSize)}).`);
       } else {
-        console.log('\tDry run mode: no files were deleted.');
-        console.log('\tRun again with --confirm to delete these files.');
+        console.log('⚠️  DRY RUN MODE: No files were deleted.');
+        console.log('To actually delete these files, run with --confirm flag.');
       }
+    });
+
+    cleanup.on('cleanup-error', (error) => {
+      console.error(`Cleanup failed: ${error.message}`);
     });
 
     await cleanup.run(directory, {
