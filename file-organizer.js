@@ -46,14 +46,17 @@ function formatDaysAgo(date) {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-function printSectionTitle(title) {
-  console.log(title);
-  console.log('═'.repeat(Math.max(title.length, 10)));
-}
+function renderSection(title, kind = 'section') {
+  const divider = '═'.repeat(Math.max(title.length, 10));
 
-function printGroupTitle(title, length = 30) {
-  console.log('═'.repeat(length));
+  if (kind === 'group') {
+    console.log(divider);
+    console.log(title);
+    return;
+  }
+
   console.log(title);
+  console.log(divider);
 }
 
 function shortenHash(hash, length = 12) {
@@ -116,12 +119,12 @@ program
 
       console.log('');
       console.log('');
-      printSectionTitle('📊 Scan Results:');
+      renderSection('📊 Scan Results:');
       console.log('');
       console.log(`\tTotal files: ${report.totalFiles}`);
       console.log(`\tTotal size: ${formatBytes(report.totalSize)}`);
       console.log('');
-      printSectionTitle('By File Type:');
+      renderSection('By File Type:');
 
       if (report.fileTypes.length === 0) {
         console.log('  No files found.');
@@ -135,12 +138,12 @@ program
       }
 
       console.log('');
-      printSectionTitle('File Age:');
+      renderSection('File Age:');
       console.log(`\tLast 7 days:    ${report.ageGroups.last7Days} files`);
       console.log(`\tLast 30 days:   ${report.ageGroups.last30Days} files`);
       console.log(`\tOlder than 90:  ${report.ageGroups.olderThan90Days} files`);
       console.log('');
-      printSectionTitle('Largest files:');
+      renderSection('Largest files:');
 
       if (report.largestFiles.length === 0) {
         console.log('  No files found.');
@@ -218,7 +221,10 @@ program
 
       report.duplicateGroups.forEach((group, index) => {
         console.log('');
-        printGroupTitle(`Group ${index + 1} (${group.files.length} copies, ${formatBytes(group.fileSize)} each):`);
+        renderSection(
+          `Group ${index + 1} (${group.files.length} copies, ${formatBytes(group.fileSize)} each):`,
+          'group'
+        );
         console.log(`\tSHA-256: ${shortenHash(group.hash)}`);
         console.log('');
 
@@ -230,7 +236,7 @@ program
       });
 
       console.log('');
-      printGroupTitle(`💾 Total wasted space: ${formatBytes(report.totalWastedSpace)}`)
+      renderSection(`💾 Total wasted space: ${formatBytes(report.totalWastedSpace)}`, 'group');
     });
 
     duplicateFinder.on('search-error', (error) => {
