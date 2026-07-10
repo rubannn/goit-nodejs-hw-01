@@ -1,0 +1,29 @@
+================================================================
+  File Organizer - available commands
+================================================================
+
+  SCAN - analyze directory contents
+  ----------------------------------------------------------
+    make scan DIR=/path/to/directory
+    make s    DIR=/path/to/directory
+
+  DUPLICATES - find duplicate files
+  ----------------------------------------------------------
+    make duplicates DIR=/path/to/directory
+    make d          DIR=/path/to/directory
+
+  ORGANIZE - sort files into target folder
+  ----------------------------------------------------------
+    make organize SOURCE=/source/dir TARGET=/target/dir
+    make o        SOURCE=/source/dir TARGET=/target/dir
+
+  CLEANUP - remove files older than N days
+  ----------------------------------------------------------
+    make cleanup DIR=/path/to/directory DAYS=90
+    make c       DIR=/path/to/directory DAYS=90
+    make c       DIR=/path/to/directory DAYS=90 CONFIRM=--confirm
+
+  Defaults:
+    DIR=E:\Downloads   SOURCE=.   TARGET=.\sorted   DAYS=90
+
+================================================================
