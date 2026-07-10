@@ -4,26 +4,24 @@
 
   SCAN - analyze directory contents
   ----------------------------------------------------------
-    make scan DIR=/path/to/directory
-    make s    DIR=/path/to/directory
+    command:        make scan
+    short version:  make s
 
   DUPLICATES - find duplicate files
   ----------------------------------------------------------
-    make duplicates DIR=/path/to/directory
-    make d          DIR=/path/to/directory
+    command:        make duplicates
+    short version:  make d
 
   ORGANIZE - sort files into target folder
   ----------------------------------------------------------
-    make organize SOURCE=/source/directory TARGET=/target/directory
-    make o        SOURCE=/source/directory TARGET=/target/directory
+    command:        make organize
+    short version:  make o
 
   CLEANUP - remove files older than N days
   ----------------------------------------------------------
-    make cleanup DIR=/path/to/directory DAYS=90
-    make c       DIR=/path/to/directory DAYS=90
-    make cleanup-confirm DIR=/path/to/directory DAYS=90 --confirm
-    make cc              DIR=/path/to/directory DAYS=90 --confirm
+    preview:        make cleanup
+    short version:  make c
 
-  Defaults:
-    DIR=/path/to/directory   SOURCE=/source/directory   TARGET=/target/directory   DAYS=90
+    delete mode:    make cleanup-confirm
+    short version:  make cc
 ================================================================
